@@ -525,11 +525,30 @@ ${equip}
     }
 
     function getAbilityLabelBySkill(skillName) {
+      const normalizedSkill =
+        normalizeSkillName(skillName);
+
       const skill =
-        SKILL_LIST.find(item => item.label === skillName);
+        SKILL_LIST.find(item => item.label === normalizedSkill);
 
       return skill
         ? ABILITY_LABELS[skill.ability]
+        : "";
+    }
+
+    function normalizeSkillName(skillName) {
+      return String(skillName || "")
+        .trim()
+        .replace(/^〔/, "")
+        .replace(/〕$/, "");
+    }
+
+    function formatSkillLabel(skillName) {
+      const normalizedSkill =
+        normalizeSkillName(skillName);
+
+      return normalizedSkill
+        ? `〔${normalizedSkill}〕`
         : "";
     }
 
@@ -577,8 +596,11 @@ ${equip}
           const skill =
             combo.skill || "";
 
+          const skillLabel =
+            formatSkillLabel(skill);
+
           lines.push(
-            `${skill ? `〔${skill}〕` : ""}${combo.combination || ""}`
+            `${skillLabel}${combo.combination || ""}`
           );
 
           if (skill) {
@@ -586,8 +608,11 @@ ${equip}
               getAbilityLabelBySkill(skill);
 
             if (ability) {
+              const normalizedSkill =
+                normalizeSkillName(skill);
+
               lines.push(
-                `({〔${skill}〕}${formatModifier(combo.dice)}+{ダイス修正})A({【${ability}】}${formatModifier(combo.judge)})C(1${formatModifier(combo.critical)}+{CT修正}) 判定`
+                `({〔${normalizedSkill}〕}${formatModifier(combo.dice)}+{ダイス修正})A({【${ability}】}${formatModifier(combo.judge)})C(1${formatModifier(combo.critical)}+{CT修正}) 判定`
               );
             }
           }
