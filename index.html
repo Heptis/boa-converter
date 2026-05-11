@@ -719,9 +719,7 @@ ${equip}
         String(data.ability?.hope?.value || "0");
 
       const initiativeBase =
-        data.ability?.[
-          data.ability?.initSelected
-        ]?.value || 0;
+        data.subability?.ap?.total || 0;
 
       return {
         kind: "character",
