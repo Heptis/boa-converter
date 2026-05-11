@@ -549,13 +549,13 @@ ${equip}
         String(memo || "");
 
       const match =
-        text.match(/([SPCX])\s*([+-]\d+)(?:\s*([+-]\d+)d10)?/i);
+        text.match(/([SPCX])\s*([+-]?\d+)(?:\s*([+-]?\d+)D10)?/i);
 
       if (!match) return null;
 
       return {
         damageType: match[1].toUpperCase(),
-        damage: match[2],
+        damage: formatModifier(match[2]),
         dr: match[3] || "+0"
       };
     }
@@ -570,11 +570,15 @@ ${equip}
             `◆${combo.name}`
           ];
 
+          lines.push(
+            `${combo.timing || ""}、対象：${combo.target || ""}、射程：${combo.range || ""}、代償：${combo.cost || ""}`
+          );
+
           const skill =
             combo.skill || "";
 
           lines.push(
-            `〔${skill}〕${combo.combination || ""}、代償${combo.cost || ""}`
+            `${skill ? `〔${skill}〕` : ""}${combo.combination || ""}`
           );
 
           if (skill) {
@@ -595,7 +599,9 @@ ${equip}
             lines.push(
               `(1${formatModifier(damage.dr)}+{DR修正})D10+{ダメージ修正}${damage.damage} ${damage.damageType}ダメージ`
             );
-          } else if (combo.memo) {
+          }
+
+          if (combo.memo) {
             lines.push(combo.memo);
           }
 
