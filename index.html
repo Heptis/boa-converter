@@ -1,0 +1,856 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>キャラクターシート倉庫 → ココフォリア変換</title>
+
+  <style>
+    :root {
+      --ink: #271713;
+      --wine: #4b1117;
+      --wine-deep: #21080b;
+      --gold: #c7a04b;
+      --gold-bright: #e0c572;
+      --paper: #f4ead5;
+      --paper-soft: #fff8e9;
+      --shadow: rgba(18, 8, 7, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      position: relative;
+      max-width: 1000px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 44px 18px 64px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(224, 197, 114, 0.18), transparent 26%),
+        radial-gradient(circle at 84% 18%, rgba(139, 38, 48, 0.36), transparent 34%),
+        linear-gradient(135deg, #180709 0%, #4b1117 45%, #1d100d 100%);
+      font-family:
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        "Noto Serif JP",
+        serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(115deg, transparent 0 18%, rgba(224, 197, 114, 0.08) 18% 19%, transparent 19% 58%, rgba(224, 197, 114, 0.06) 58% 59%, transparent 59%),
+        radial-gradient(circle at 50% 0%, rgba(255, 248, 233, 0.07), transparent 42%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.32;
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0 0 8px;
+      color: var(--paper-soft);
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.2;
+      letter-spacing: 0;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
+    }
+
+    h1::after {
+      content: "";
+      display: block;
+      width: 180px;
+      height: 2px;
+      margin-top: 14px;
+      background: linear-gradient(90deg, var(--gold-bright), transparent);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: var(--wine-deep);
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      position: relative;
+      z-index: 1;
+      max-width: 100%;
+      margin: 0 0 24px;
+      color: rgba(255, 248, 233, 0.88);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-family: monospace;
+      color: #211512;
+      background: rgba(255, 248, 233, 0.95);
+      border: 1px solid rgba(75, 17, 23, 0.26);
+      border-radius: 6px;
+      box-shadow: inset 0 1px 3px rgba(39, 23, 19, 0.18);
+    }
+
+    input[type="url"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #211512;
+      background: rgba(255, 248, 233, 0.96);
+      border: 1px solid rgba(75, 17, 23, 0.26);
+      border-radius: 6px;
+      box-shadow: inset 0 1px 3px rgba(39, 23, 19, 0.16);
+      font-family: ui-monospace, "Cascadia Mono", monospace;
+    }
+
+    textarea:focus,
+    input:focus {
+      outline: 2px solid rgba(224, 197, 114, 0.8);
+      border-color: var(--gold);
+    }
+
+    #inputJson {
+      height: 320px;
+    }
+
+    #output {
+      height: 320px;
+      background: #1f1714;
+      color: #f2d984;
+      border-color: rgba(224, 197, 114, 0.48);
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 16px;
+      color: #fff8e9;
+      background: linear-gradient(180deg, #8b2630, var(--wine));
+      border: 1px solid rgba(224, 197, 114, 0.65);
+      border-radius: 6px;
+      box-shadow:
+        0 7px 18px rgba(33, 8, 11, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      font-family: inherit;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: linear-gradient(180deg, #a4313b, #5d151d);
+      border-color: var(--gold-bright);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .section {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 32px;
+      padding: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 248, 233, 0.94), rgba(244, 234, 213, 0.91));
+      border: 1px solid rgba(224, 197, 114, 0.5);
+      border-radius: 8px;
+      box-shadow:
+        0 18px 44px var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    }
+
+    .help {
+      line-height: 1.8;
+      border-left: 5px solid var(--gold);
+    }
+
+    .help ol {
+      margin: 0;
+      padding-left: 1.5em;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    @media (max-width: 680px) {
+      body {
+        padding: 28px 12px 44px;
+      }
+
+      .section {
+        padding: 16px;
+      }
+
+      button {
+        width: 100%;
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>キャラクターシート倉庫 → ココフォリア変換</h1>
+  <p class="lead">
+    ブレイド・オブ・アルカナのキャラクターシート倉庫JSONを、ココフォリアへ貼り付けられる形式に整えます。
+  </p>
+
+  <div class="section help">
+    <h2>使い方</h2>
+
+    <ol>
+      <li>キャラクターシート倉庫のキャラクター編集ページURLを「キャラクターシート倉庫URL変換」に貼り付ける</li>
+      <li>自動生成されたURLを「別タブで開く」で開く</li>
+      <li>別タブに表示されたJSONをすべてコピーする</li>
+      <li>コピーしたJSONを「キャラクターシートJSON入力」に貼り付ける</li>
+      <li>「変換」を押す。変換後のJSONは自動でクリップボードにコピーされる</li>
+      <li>ココフォリアのキャラクター追加画面で、コピーされたJSONを貼り付けてインポートする</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>キャラクターシート倉庫URL変換</h2>
+
+    <input
+      id="sheetUrlInput"
+      type="url"
+      placeholder="キャラクターシート倉庫のURLを貼り付け">
+
+    <input
+      id="sheetUrlOutput"
+      type="text"
+      readonly
+      placeholder="display?ajax=1 のURLがここに表示されます">
+
+    <button id="openSheetUrlBtn">別タブで開く</button>
+  </div>
+
+  <div class="section">
+    <h2>キャラクターシートJSON入力</h2>
+
+    <textarea
+      id="inputJson"
+      placeholder="ここにキャラクターシート倉庫のJSONを貼り付け"></textarea>
+
+    <button id="convertBtn">変換</button>
+  </div>
+
+  <div class="section">
+    <h2>ココフォリアJSON</h2>
+
+    <textarea id="output" readonly></textarea>
+    <button id="outputCopyBtn">変換後JSONコピー</button>
+  </div>
+
+  <script>
+
+    const ARCANA_LIST = [
+      { "name": "", "miracle": "" },
+      { "name": "ウェントス", "miracle": "神移" },
+      { "name": "エフェクトス", "miracle": "大破壊" },
+      { "name": "クレア―タ", "miracle": "戦鬼" },
+      { "name": "マーテル", "miracle": "再生" },
+      { "name": "コロナ", "miracle": "紋章" },
+      { "name": "フィニス", "miracle": "永遠" },
+      { "name": "エルス", "miracle": "心友" },
+      { "name": "アダマス", "miracle": "無敵防御" },
+      { "name": "アルドール", "miracle": "絶対攻撃" },
+      { "name": "ファンタスマ", "miracle": "真名" },
+      { "name": "アクシス", "miracle": "拡大" },
+      { "name": "レクス", "miracle": "制裁" },
+      { "name": "アクア", "miracle": "不死身" },
+      { "name": "グラディウス", "miracle": "死神の手" },
+      { "name": "アングルス", "miracle": "天真" },
+      { "name": "ディアボルス(魔剣1)", "miracle": "魔器：大破壊" },
+      { "name": "ディアボルス(魔剣2)", "miracle": "魔器：絶対攻撃" },
+      { "name": "ディアボルス(魔剣3)", "miracle": "魔器：天の火" },
+      { "name": "ディアボルス(魔鎧)", "miracle": "魔器：無敵防御" },
+      { "name": "フルキフェル(ｳﾙﾌｪﾝ)", "miracle": "模造：不死身" },
+      { "name": "フルキフェル(ｴﾙﾌ)", "miracle": "模造：活性化" },
+      { "name": "フルキフェル(ｴﾝﾄ)", "miracle": "模造：無敵防御" },
+      { "name": "フルキフェル(ｵｳｶﾞ)", "miracle": "模造：死神の手" },
+      { "name": "フルキフェル(ｵｵｶﾐﾜｼ)", "miracle": "模造：神移" },
+      { "name": "フルキフェル(ｶｳﾞｨｰﾅｽ)", "miracle": "模造：真名" },
+      { "name": "フルキフェル(ｻﾞﾙﾑ)", "miracle": "模造：再生" },
+      { "name": "フルキフェル(ﾄﾞﾜｰﾌ)", "miracle": "模造：爆破" },
+      { "name": "フルキフェル(ﾊﾞﾝﾋﾞｰﾉ)", "miracle": "模造：新世界" },
+      { "name": "フルキフェル(ｳﾞｧﾙﾌｪｰ)", "miracle": "模造：活性化" },
+      { "name": "フルキフェル(ｵｰｸ)", "miracle": "模造：死神の手" },
+      { "name": "フルキフェル(ﾗｶﾞﾙｰﾄ)", "miracle": "模造：不可知" },
+      { "name": "ステラ", "miracle": "活性化" },
+      { "name": "ルナ", "miracle": "不可知" },
+      { "name": "デクストラ", "miracle": "爆破" },
+      { "name": "イグニス", "miracle": "天の火" },
+      { "name": "オービス", "miracle": "新世界" }
+    ];
+
+    const ARCANA_MAP = {};
+
+    ARCANA_LIST.forEach(a => {
+      ARCANA_MAP[a.name] = a;
+    });
+
+    const SKILL_LIST = [
+      { ability: "strength", key: "s1", label: "運動" },
+      { ability: "strength", key: "s2", label: "格闘" },
+      { ability: "strength", key: "s3", label: "重武器" },
+      { ability: "reflexes", key: "s1", label: "回避" },
+      { ability: "reflexes", key: "s2", label: "騎乗" },
+      { ability: "reflexes", key: "s3", label: "軽武器" },
+      { ability: "reflexes", key: "s4", label: "射撃" },
+      { ability: "empathy", key: "s1", label: "交渉" },
+      { ability: "empathy", key: "s2", label: "事情通" },
+      { ability: "empathy", key: "s3", label: "天宮魔法" },
+      { ability: "empathy", key: "s4", label: "手当" },
+      { ability: "intelligence", key: "s1", label: "隠密" },
+      { ability: "intelligence", key: "s2", label: "精霊魔法" },
+      { ability: "intelligence", key: "s3", label: "知覚" },
+      { ability: "intelligence", key: "s4", label: "錬金術" },
+      { ability: "hope", key: "s1", label: "自我" }
+    ];
+
+    const ABILITY_LABELS = {
+      strength: "体格",
+      reflexes: "反射",
+      empathy: "共感",
+      intelligence: "知性",
+      hope: "希望"
+    };
+
+    function getMiracle(arcanaName) {
+      return ARCANA_MAP[arcanaName]?.miracle || "";
+    }
+
+    function getSkillLevel(data, ability, key) {
+      return String(
+        data.skills?.[ability]?.[key]?.level || "0"
+      );
+    }
+
+    function formatWeaponAttack(weapon) {
+      const attack =
+        String(weapon.attack || "").trim();
+
+      const match =
+        attack.match(/^([SPCX])\s*([+-]\d+)$/i);
+
+      const value =
+        match
+          ? `${match[2]} ${match[1].toUpperCase()}`
+          : attack;
+
+      return `${value} (${weapon.name})`;
+    }
+
+    function buildWeaponAttackParams(data) {
+      const weapons =
+        data.weapons || [];
+
+      const count =
+        Math.max(2, weapons.length);
+
+      return Array.from({ length: count }, (_, index) => {
+        const weapon =
+          weapons[index];
+
+        return {
+          label: `攻撃力${index + 1}`,
+          value:
+            weapon?.name && weapon?.attack
+              ? formatWeaponAttack(weapon)
+              : "+0"
+        };
+      });
+    }
+
+    function buildParams(data, abilities) {
+      return [
+        {
+          label: "【体格】",
+          value: abilities.strength
+        },
+        {
+          label: "【反射】",
+          value: abilities.reflexes
+        },
+        {
+          label: "【共感】",
+          value: abilities.empathy
+        },
+        {
+          label: "【知性】",
+          value: abilities.intelligence
+        },
+        {
+          label: "【希望】",
+          value: abilities.hope
+        },
+        ...SKILL_LIST.map(skill => ({
+          label: `〔${skill.label}〕`,
+          value: getSkillLevel(
+            data,
+            skill.ability,
+            skill.key
+          )
+        })),
+        ...buildWeaponAttackParams(data)
+      ];
+    }
+
+    function buildArtsText(arts) {
+
+      if (!arts || !arts.length) return "";
+
+      return arts
+        .filter(art => art.name)
+        .map(art => {
+
+          let name = art.name;
+
+          if (
+            art.exptype === "1" &&
+            !name.startsWith("†")
+          ) {
+            name = "†" + name;
+          }
+
+          return `〈${name}〉${art.level || ""}`;
+
+        })
+        .join(" ");
+    }
+
+    function buildEquipText(data) {
+
+      const names = [];
+
+      if (data.weapons?.length) {
+
+        data.weapons.forEach(w => {
+          if (w.name) {
+            names.push(w.name);
+          }
+        });
+      }
+
+      if (data.armours?.length) {
+
+        data.armours.forEach(a => {
+          if (a.name) {
+            names.push(a.name);
+          }
+        });
+      }
+
+      return names.join("、");
+    }
+
+    function buildMemo(data) {
+
+      const arcanaPast =
+        data.arcana?.past?.value || "";
+
+      const arcanaPresent =
+        data.arcana?.present?.value || "";
+
+      const arcanaFuture =
+        data.arcana?.future?.value || "";
+
+      const miraclePast =
+        getMiracle(arcanaPast);
+
+      const miraclePresent =
+        getMiracle(arcanaPresent);
+
+      const miracleFuture =
+        getMiracle(arcanaFuture);
+
+      const arts =
+        buildArtsText(data.arts);
+
+      const equip =
+        buildEquipText(data);
+
+      const slash =
+        data.armourstotal?.slash || "0";
+
+      const impulse =
+        data.armourstotal?.impulse || "0";
+
+      const crash =
+        data.armourstotal?.crash || "0";
+
+      return `?  アルカナ  ?
+${arcanaPast}＝${arcanaPresent}＝${arcanaFuture}
+
+?  奇跡  ?
+《${miraclePast}》《${miraclePresent}》《${miracleFuture}》
+
+?  特技  ?
+${arts}
+
+?  装備  ?
+${equip}
+
+?  防御力  ?
+Ｓ/Ｐ/Ｃ：${slash}/${impulse}/${crash}`;
+    }
+
+    function getAbilityLabelBySkill(skillName) {
+      const skill =
+        SKILL_LIST.find(item => item.label === skillName);
+
+      return skill
+        ? ABILITY_LABELS[skill.ability]
+        : "";
+    }
+
+    function formatModifier(value) {
+      const text =
+        String(value || "").trim();
+
+      if (!text) return "+0";
+
+      return /^[+-]/.test(text)
+        ? text
+        : `+${text}`;
+    }
+
+    function parseComboDamage(memo) {
+      const text =
+        String(memo || "");
+
+      const match =
+        text.match(/([SPCX])\s*([+-]\d+)(?:\s*([+-]\d+)d10)?/i);
+
+      if (!match) return null;
+
+      return {
+        damageType: match[1].toUpperCase(),
+        damage: match[2],
+        dr: match[3] || "+0"
+      };
+    }
+
+    function buildComboCommands(combos) {
+      if (!combos?.length) return "";
+
+      return combos
+        .filter(combo => combo.name)
+        .map(combo => {
+          const lines = [
+            `◆${combo.name}`
+          ];
+
+          const skill =
+            combo.skill || "";
+
+          lines.push(
+            `〔${skill}〕${combo.combination || ""}、代償${combo.cost || ""}`
+          );
+
+          if (skill) {
+            const ability =
+              getAbilityLabelBySkill(skill);
+
+            if (ability) {
+              lines.push(
+                `({〔${skill}〕}${formatModifier(combo.dice)}+{ダイス修正})A({【${ability}】}${formatModifier(combo.judge)})C(1${formatModifier(combo.critical)}+{CT修正}) 判定`
+              );
+            }
+          }
+
+          const damage =
+            parseComboDamage(combo.memo);
+
+          if (damage) {
+            lines.push(
+              `(1${formatModifier(damage.dr)}+{DR修正})D10+{ダメージ修正}${damage.damage} ${damage.damageType}ダメージ`
+            );
+          } else if (combo.memo) {
+            lines.push(combo.memo);
+          }
+
+          return lines.join("\n");
+        })
+        .join("\n\n");
+    }
+
+    function buildCommands(data) {
+      const miraclePast =
+        getMiracle(data.arcana?.past?.value || "");
+
+      const miraclePresent =
+        getMiracle(data.arcana?.present?.value || "");
+
+      const miracleFuture =
+        getMiracle(data.arcana?.future?.value || "");
+
+      const sections = [
+        `◆奇跡
+《${miraclePast}》
+《${miraclePresent}》
+《${miracleFuture}》`
+      ];
+
+      const comboCommands =
+        buildComboCommands(data.combo);
+
+      if (comboCommands) {
+        sections.push(comboCommands);
+      }
+
+      return sections.join("\n\n");
+    }
+
+    function convertSheetUrl(urlText) {
+      const text =
+        String(urlText || "").trim();
+
+      if (!text) return "";
+
+      const url =
+        new URL(text);
+
+      url.pathname =
+        "/boa/display";
+
+      url.searchParams.set("ajax", "1");
+
+      const key =
+        new URL(text).searchParams.get("key");
+
+      url.search = "";
+      url.searchParams.set("ajax", "1");
+
+      if (key) {
+        url.searchParams.set("key", key);
+      }
+
+      return url.toString();
+    }
+
+    async function copyText(text) {
+      if (!text) return;
+
+      await navigator.clipboard.writeText(text);
+    }
+
+    function convertToCcfolia(data) {
+
+      const hp =
+        Number(data.subability?.hp?.total || 0);
+
+      const dp =
+        Number(data.subability?.dp?.total || 0);
+
+      const strength =
+        String(data.ability?.strength?.value || "0");
+
+      const reflexes =
+        String(data.ability?.reflexes?.value || "0");
+
+      const empathy =
+        String(data.ability?.empathy?.value || "0");
+
+      const intelligence =
+        String(data.ability?.intelligence?.value || "0");
+
+      const hope =
+        String(data.ability?.hope?.value || "0");
+
+      const initiativeBase =
+        data.ability?.[
+          data.ability?.initSelected
+        ]?.value || 0;
+
+      return {
+        kind: "character",
+
+        data: {
+
+          name:
+            data.base?.name || "名称未設定",
+
+          initiative:
+            Number(initiativeBase),
+
+          externalUrl: "",
+
+          memo:
+            buildMemo(data),
+
+          status: [
+            {
+              label: "HP",
+              value: hp,
+              max: hp
+            },
+            {
+              label: "DP",
+              value: dp,
+              max: dp
+            },
+            {
+              label: "悪徳目撃回数",
+              value: 0,
+              max: 0
+            },
+            {
+              label: "ダイス修正",
+              value: 0,
+              max: 0
+            },
+            {
+              label: "判定値修正",
+              value: 0,
+              max: 0
+            },
+            {
+              label: "CT修正",
+              value: 0,
+              max: 0
+            },
+            {
+              label: "DR修正",
+              value: 0,
+              max: 0
+            },
+            {
+              label: "ダメージ修正",
+              value: 0,
+              max: 0
+            }
+          ],
+
+          params:
+            buildParams(data, {
+              strength,
+              reflexes,
+              empathy,
+              intelligence,
+              hope
+            }),
+
+          commands:
+            buildCommands(data)
+        }
+      };
+    }
+
+    document
+      .getElementById("convertBtn")
+      .addEventListener("click", async () => {
+
+      const input =
+        document.getElementById("inputJson").value;
+
+      const output =
+        document.getElementById("output");
+
+      try {
+
+        const data =
+          JSON.parse(input);
+
+        const converted =
+          convertToCcfolia(data);
+
+        output.value =
+          JSON.stringify(converted, null, 2);
+
+        try {
+          await copyText(output.value);
+        } catch (copyErr) {
+          console.warn(copyErr);
+        }
+
+      } catch (err) {
+
+        console.error(err);
+
+        output.value =
+          "エラー:\n" + err.message;
+      }
+    });
+
+    function updateSheetUrl() {
+      const input =
+        document.getElementById("sheetUrlInput");
+
+      const output =
+        document.getElementById("sheetUrlOutput");
+
+      try {
+        output.value =
+          convertSheetUrl(input.value);
+      } catch (err) {
+        output.value = "";
+      }
+    }
+
+    async function copyOutputJson() {
+      const output =
+        document.getElementById("output");
+
+      if (!output.value) return;
+
+      await copyText(output.value);
+
+      alert("コピーしました");
+    }
+
+    document
+      .getElementById("sheetUrlInput")
+      .addEventListener("input", updateSheetUrl);
+
+    document
+      .getElementById("openSheetUrlBtn")
+      .addEventListener("click", () => {
+
+      updateSheetUrl();
+
+      const url =
+        document.getElementById("sheetUrlOutput").value;
+
+      if (!url) return;
+
+      window.open(url, "_blank", "noopener");
+    });
+
+    document
+      .getElementById("outputCopyBtn")
+      .addEventListener("click", copyOutputJson);
+
+  </script>
+
+</body>
+</html>
